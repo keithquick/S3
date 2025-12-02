@@ -1,54 +1,82 @@
 # Description of what this change includes
 # Revision number
 # Date
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  CloudFormation template that creates a VPC named VPC-wilqui6653 in us-west-2
+  spanning at least three Availability Zones with one subnet per AZ.
 
-AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  EnvironmentRegion:
+    Type: String
+    Default: us-west-2
+    Description: AWS Region for deployment (must be us-west-2)
+
+Mappings:
+  RegionMap:
+    us-west-2:
+      AZ1: us-west-2a
+      AZ2: us-west-2b
+      AZ3: us-west-2c
 
 Resources:
-  S3Bucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        BlockPublicPolicy: false
-        IgnorePublicAcls: false
-        RestrictPublicBuckets: false
-      WebsiteConfiguration:
-        IndexDocument: index.html
-        ErrorDocument: error.html
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
 
-  S3BucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
+  VPC:
+    Type: AWS::EC2::VPC
     Properties:
-      Bucket: !Ref S3Bucket
-      PolicyDocument:
-        Id: MyPolicy
-        Version: 2012-10-17
-        Statement:
-          - Sid: PublicReadForGetBucketObjects
-            Effect: Allow
-            Principal: '*'
-            Action: 's3:GetObject'
-            Resource: !Join 
-              - ''
-              - - 'arn:aws:s3:::'
-                - !Ref S3Bucket
-                - /*
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: VPC-wilqui6653
+
+  SubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !FindInMap [RegionMap, !Ref EnvironmentRegion, AZ1]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Subnet-AZ1
+
+  SubnetAZ2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !FindInMap [RegionMap, !Ref EnvironmentRegion, AZ2]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Subnet-AZ2
+
+  SubnetAZ3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: !FindInMap [RegionMap, !Ref EnvironmentRegion, AZ3]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Subnet-AZ3
 
 Outputs:
-  WebsiteURL:
-    Description: URL for website hosted on S3
-    Value: !GetAtt 
-      - S3Bucket
-      - WebsiteURL
+  VPCId:
+    Description: ID of the created VPC
+    Value: !Ref VPC
 
-  S3BucketSecureURL:
-    Description: HTTPS URL for website
-    Value: !Join 
-      - ''
-      - - 'https://'
-        - !GetAtt 
-          - S3Bucket
-          - DomainName
+  Subnet1Id:
+    Description: Subnet ID for Availability Zone 1
+    Value: !Ref SubnetAZ1
+
+  Subnet2Id:
+    Description: Subnet ID for Availability Zone 2
+    Value: !Ref SubnetAZ2
+
+  Subnet3Id:
+    Description: Subnet ID for Availability Zone 3
+    Value: !Ref SubnetAZ3
